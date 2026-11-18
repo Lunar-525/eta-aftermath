@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>硅典·断桥 — 聚落地图</title>
+</head>
+<body>
+  <main class="shell">
+    <div class="workspace">
+      <div class="map-column">
+        <section class="atlas" aria-label="聚落地图">
+          <div class="map-scroll cut-corner cut-outline" id="map-viewport">
+            <span class="terminal-tab" aria-hidden="true"></span>
+            <div class="map" id="map">
+              <canvas id="map-grid" aria-hidden="true"></canvas>
+              <canvas id="terrain" aria-hidden="true"></canvas>
+              <div id="tiles" role="group" aria-label="六边形地块"></div>
+              <button class="decision-marker" id="decision-marker" type="button" aria-controls="decision-panel" aria-expanded="false" hidden></button>
+            </div>
+            <div class="map-zoom" role="group" aria-label="地图缩放">
+              <button type="button" id="zoom-in" aria-label="放大地图">+</button>
+              <button type="button" id="zoom-out" aria-label="缩小地图">−</button>
+              <button type="button" id="zoom-reset" aria-label="恢复全图" title="恢复全图">100%</button>
+            </div>
+            <div class="compass" role="img" aria-label="指南针，北在上方">
+              <span aria-hidden="true">北</span><span aria-hidden="true">东</span>
+              <span aria-hidden="true">南</span><span aria-hidden="true">西</span>
+            </div>
+            <aside class="decision-panel cut-corner cut-outline" id="decision-panel" aria-labelledby="decision-title" hidden>
+              <div class="decision-head module-heading">
+                <h2 id="decision-title">议事会表决 <span class="heading-en" lang="en">RESOLUTIONS</span></h2>
+                <button class="dossier-close" id="decision-close" type="button" aria-label="关闭决议详情">✕</button>
+              </div>
+              <div class="decision-content" id="decision-content"></div>
+            </aside>
+            <aside class="dossier cut-corner cut-outline" id="tile-dossier" aria-labelledby="tile-name">
+              <div class="section-head module-heading">
+                <p>地块档案 <span class="heading-en" lang="en">TILE RECORD</span></p>
+                <span class="dossier-tools">
+                  <span class="heading-meta" id="coords"></span>
+                  <button type="button" class="dossier-close" id="dossier-close" aria-label="关闭地块档案" title="关闭地块档案；选择其他地块时重新打开">✕</button>
+                </span>
+              </div>
+              <div class="tile-info">
+                <p id="region" class="eyebrow"></p>
+                <h2 id="tile-name"></h2>
+                <div class="former"><span>战前地名</span><strong id="former-name"></strong></div>
+                <figure class="tile-photo" id="tile-photo" hidden>
+                  <img id="tile-photo-image" alt="">
+                  <figcaption id="tile-photo-caption"></figcaption>
+                </figure>
+                <p id="description"></p>
+                <dl id="facility-stats" class="facility-stats"></dl>
+              </div>
+              <button type="button" class="dossier-resize" id="dossier-resize" aria-label="拖动右下角斜边或使用方向键调整地块档案大小" title="拖动右下角斜边调整大小，双击复位"></button>
+            </aside>
+          </div>
+          <div class="timeline" role="group" aria-label="模拟日回放">
+            <div class="transport">
+              <button id="back" class="control" type="button" aria-label="上一日">‹</button>
+              <button id="play" class="control play" type="button" aria-label="播放回放">▶</button>
+              <button id="next" class="control" type="button" aria-label="下一日">›</button>
+            </div>
+            <div class="scrubber">
+              <div><output for="day" id="date"></output></div>
+              <input id="day" type="range" min="1" value="1" aria-label="模拟日">
+            </div>
+            <span class="seed" id="seed-label"></span>
+            <details class="map-key-menu">
+              <summary>图例</summary>
+              <div class="map-keys cut-corner cut-outline">
+                <ul class="legend" id="district-legend" aria-label="功能区图例"></ul>
+                <ul class="legend" id="legend" aria-label="地貌图例"></ul>
+              </div>
+            </details>
+          </div>
+        </section>
+        <section class="overview cut-corner" aria-label="聚落资源">
+          <div class="metrics" id="metrics"></div>
+        </section>
+      </div>
+      <div class="right-column">
+        <header class="masthead">
+          <div class="identity cut-corner">
+            <h1>Aftermath</h1>
+            <p class="identity-subtitle" lang="en">Dev World Inspector</p>
+            <p class="location"><strong>硅典·断桥</strong><span>惠山南麓</span></p>
+          </div>
+          <dl class="calendar cut-corner">
+            <div><dt>日期</dt><dd><time id="calendar-date"></time></dd></div>
+            <div><dt>时刻</dt><dd><time id="clock-value"></time></dd></div>
+            <div><dt>天气</dt><dd id="weather"></dd></div>
+          </dl>
+          <div class="grid-summary cut-corner" id="grid-summary">
+            <div class="power-heading">
+              <span>电网 <strong id="grid-pressure"></strong></span><span id="grid-load"></span>
+            </div>
+            <button type="button" class="health-row" id="health-grid">
+              <span class="health-name">发电站</span>
+              <span class="health-badge" id="health-grid-state"></span>
+              <span class="health-detail" id="health-grid-detail"></span>
+            </button>
+            <div class="power-track telemetry-track" id="grid-gauge" role="meter" aria-label="电网压力" aria-valuemin="0">
+              <span class="telemetry-reference" id="grid-reference" aria-hidden="true" title="参考电压 220 V"></span>
+              <div class="telemetry-reading" aria-hidden="true">
+                <span id="grid-fill"></span>
+                <svg class="grid-wave" viewBox="0 0 320 28" preserveAspectRatio="none">
+                  <path id="grid-wave" vector-effect="non-scaling-stroke"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="power-stack" id="power-stack" aria-hidden="true"></div>
+            <dl class="power-breakdown" id="power-breakdown" aria-label="电力去向"></dl>
+          </div>
+          <div class="grid-summary water-summary cut-corner" id="water-summary">
+            <div class="power-heading">
+              <span><button type="button" class="utility-link" id="water-open">供水压力</button><strong id="water-pressure"></strong></span>
+              <span id="water-load"></span>
+            </div>
+            <button type="button" class="health-row" id="health-water">
+              <span class="health-name">净水站</span>
+              <span class="health-badge" id="health-water-state"></span>
+              <span class="health-detail" id="health-water-detail"></span>
+            </button>
+            <div class="power-track telemetry-track" id="water-gauge" role="meter" aria-label="供水压力" aria-valuemin="0">
+              <span class="telemetry-reference" id="water-reference" aria-hidden="true" title="参考水质 80/100"></span>
+              <div class="telemetry-reading" aria-hidden="true"><span id="water-fill"></span></div>
+            </div>
+            <div class="power-stack" id="water-stack" aria-hidden="true"></div>
+            <dl class="power-breakdown water-breakdown" id="water-breakdown" aria-label="实际供水去向"></dl>
+            <div class="utility-status"><span id="water-reserve"></span><span id="water-gap"></span></div>
+          </div>
+          <div class="grid-summary granary-summary cut-corner" id="granary-summary">
+            <div class="power-heading">
+              <button type="button" class="utility-link" id="granary-open">粮仓</button><span id="granary-load"></span>
+            </div>
+            <div class="granary-track" id="granary-gauge" role="img" aria-label="粮仓库存与溢出">
+              <span id="granary-storage" aria-hidden="true"></span>
+              <span id="granary-exposed" aria-hidden="true"></span>
+            </div>
+            <div class="utility-status"><span id="granary-condition"></span><span id="granary-overflow"></span></div>
+            <div class="utility-status"><span id="granary-risk"></span><span id="granary-loss"></span></div>
+          </div>
+        </header>
+        <aside class="log-panel cut-corner cut-outline" aria-label="当日事件">
+          <details class="organization-dossier">
+            <summary>组织档案 <span class="heading-en" lang="en">ORGANIZATIONS</span></summary>
+            <div class="organization-content">
+              <ol class="organization-chart" aria-label="组织协作流程">
+                <li>
+                  <details class="organization-node">
+                    <summary><span><strong>物资交换组</strong><small>签认燃料与储水账目</small></span><span class="member-count" id="exchange-members-count"></span></summary>
+                    <p class="organization-cooperation" id="exchange-cooperation"></p>
+                    <div class="member-links" id="exchange-members" aria-label="物资交换组成员"></div>
+                  </details>
+                </li>
+                <li>
+                  <details class="organization-node">
+                    <summary><span><strong>生产合作社</strong><small>评估设备和收成，提出方案</small></span><span class="member-count" id="cooperative-members-count"></span></summary>
+                    <p class="organization-cooperation" id="cooperative-cooperation"></p>
+                    <div class="member-links" id="cooperative-members" aria-label="生产合作社成员"></div>
+                  </details>
+                </li>
+                <li>
+                  <details class="organization-node">
+                    <summary><span><strong>聚落议事会</strong><small>表决，交由设施执行</small></span><span class="member-count" id="council-members-count"></span></summary>
+                    <p class="organization-cooperation" id="council-cooperation"></p>
+                    <div class="member-links" id="council-members" aria-label="聚落议事会成员"></div>
+                  </details>
+                </li>
+              </ol>
+              <section class="member-detail" id="member-detail" aria-labelledby="member-name" hidden>
+                <h4 id="member-name"></h4>
+                <p id="member-rule">先看过去 14 天的完工班次。同样忙碌的候选人，再按与已入组成员的近期合作选人。</p>
+                <p id="member-summary"></p>
+                <p id="member-priority"></p>
+                <ul id="member-partners" aria-label="搭班伙伴与同班次数"></ul>
+              </section>
+              <section class="organization-dispatch" aria-label="当日规则与表决记录">
+                <h4>当日执行</h4>
+                <p id="backup-policy"></p>
+                <button class="cause" id="last-vote" type="button" hidden></button>
+                <p id="food-policy"></p>
+                <p id="food-output"></p>
+                <button class="cause" id="last-food-vote" type="button" hidden></button>
+              </section>
+            </div>
+          </details>
+          <div class="journal">
+            <div class="journal-head module-heading">
+              <h3>当日事件 <span class="heading-en" lang="en">DAILY LOG</span></h3>
+              <label class="heading-meta"><input type="checkbox" id="all-events"> 全聚落</label>
+            </div>
+            <div class="journal-columns" aria-hidden="true"><span>时刻</span><span>类别</span><span>事件 / 流水</span></div>
+            <ol id="event-list" tabindex="0" aria-label="按时刻排列的事件"></ol>
+          </div>
+        </aside>
+      </div>
+    </div>
+    <noscript>地图回放需要启用 JavaScript。</noscript>
+  </main>
+  <dialog class="photo-dialog" id="photo-dialog" aria-label="近期影像">
+    <img id="photo-dialog-image" alt="">
+    <button type="button" class="photo-dialog-close" id="photo-dialog-close">关闭</button>
+  </dialog>
